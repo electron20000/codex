@@ -12,22 +12,39 @@ class DisplayBoardTests(TestCase):
         self.p1, _ = Location.objects.get_or_create(
             slug="p1", defaults={"name": "P1", "order": 1}
         )
-        LocationMessage.objects.create(location=self.trans, text="Test komunikat", is_active=True)
+        self.zones, _ = Location.objects.get_or_create(
+            slug="strefy", defaults={"name": "STREFY", "order": 5}
+        )
+        LocationMessage.objects.create(
+            location=self.trans,
+            text="Test komunikat",
+            is_active=True,
+            is_important=True,
+        )
         LocationMessage.objects.create(location=self.p1, text="Nieaktywny", is_active=False)
 
     def test_locations_render_in_order(self):
         response = self.client.get(reverse("display-board"))
         self.assertContains(response, "TRANS")
         self.assertContains(response, "P1")
+        self.assertContains(response, "STREFY")
         # Active message visible, inactive one hidden
         self.assertContains(response, "Test komunikat")
         self.assertNotContains(response, "Nieaktywny")
+        self.assertContains(response, "location-message--important")
 
     def test_closed_location_displays_closed_message(self):
         self.trans.is_closed = True
         self.trans.save()
         response = self.client.get(reverse("display-board"))
         self.assertContains(response, "Zamknięte")
+
+    def test_board_data_endpoint_returns_updated_markup(self):
+        response = self.client.get(reverse("board-data"))
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("Test komunikat", payload["html"])
+        self.assertIsNotNone(payload["last_updated"])
 
 
 class LeaderPanelTests(TestCase):
@@ -69,10 +86,12 @@ class LeaderPanelTests(TestCase):
         assert trans_prefix is not None
         post_data[f"{trans_prefix}-0-text"] = "Nowy komunikat"
         post_data[f"{trans_prefix}-0-is_active"] = "on"
+        post_data[f"{trans_prefix}-0-is_important"] = "on"
 
         response = self.client.post(url, data=post_data, follow=True)
         self.assertRedirects(response, url)
         self.assertTrue(LocationMessage.objects.filter(location=self.location).exists())
         message = LocationMessage.objects.get(location=self.location)
         self.assertTrue(message.is_active)
+        self.assertTrue(message.is_important)
         self.assertEqual(message.display_text, "Nowy komunikat")

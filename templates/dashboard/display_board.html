@@ -1,31 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Tablica STOW{% endblock %}
-{% block header %}Aktualne instrukcje{% endblock %}
+{% block header %}WHERE TO GO{% endblock %}
 {% block content %}
-<div class="locations-board">
-    {% for location in locations %}
-        <article class="location-card {% if location.is_closed %}location-card--closed{% else %}location-card--open{% endif %}">
-            <header>
-                <h2>{{ location.name }}</h2>
-            </header>
-            <div class="location-card__body">
-                {% if location.is_closed %}
-                    <p class="location-card__status">Zamknięte</p>
-                {% else %}
-                    {% if location.active_messages %}
-                        <ul>
-                            {% for message in location.active_messages %}
-                                <li>{{ message.display_text }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="location-card__empty">Brak aktywnych komunikatów.</p>
-                    {% endif %}
-                {% endif %}
-            </div>
-        </article>
-    {% empty %}
-        <p>Brak zdefiniowanych lokalizacji.</p>
-    {% endfor %}
+<div
+    class="locations-board"
+    data-board
+    {% if last_updated %}data-last-updated="{{ last_updated|date:'c' }}"{% endif %}
+>
+    {% include "dashboard/partials/location_cards.html" with locations=locations %}
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    (function () {
+        const boardEl = document.querySelector('[data-board]');
+        if (!boardEl) {
+            return;
+        }
+        let lastUpdated = boardEl.dataset.lastUpdated || null;
+        const endpoint = "{% url 'board-data' %}";
+
+        async function poll() {
+            try {
+                const response = await fetch(endpoint, {
+                    headers: {"X-Requested-With": "XMLHttpRequest"},
+                });
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}`);
+                }
+                const payload = await response.json();
+                if (payload.last_updated && payload.last_updated !== lastUpdated) {
+                    boardEl.innerHTML = payload.html;
+                    boardEl.dataset.lastUpdated = payload.last_updated;
+                    lastUpdated = payload.last_updated;
+                }
+            } catch (error) {
+                console.error("Błąd podczas odświeżania tablicy:", error);
+            }
+        }
+
+        poll();
+        setInterval(poll, 5000);
+    })();
+</script>
 {% endblock %}

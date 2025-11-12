@@ -15,9 +15,10 @@ class LocationForm(forms.ModelForm):
 class LocationMessageForm(forms.ModelForm):
     class Meta:
         model = LocationMessage
-        fields = ["is_active", "text"]
+        fields = ["is_active", "is_important", "text"]
         widgets = {
             "is_active": forms.CheckboxInput(attrs={"class": "toggle-input"}),
+            "is_important": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "text": forms.Textarea(
                 attrs={
                     "rows": 2,
@@ -29,12 +30,14 @@ class LocationMessageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["text"].required = False
+        self.fields["is_important"].required = False
 
     def clean(self):
         cleaned = super().clean()
         text = cleaned.get("text", "")
         is_active = cleaned.get("is_active")
+        is_important = cleaned.get("is_important")
         cleaned["text"] = text.strip()
-        if is_active and not cleaned["text"]:
+        if (is_active or is_important) and not cleaned["text"]:
             self.add_error("text", "Wpisz treść komunikatu albo odznacz pole aktywacji.")
         return cleaned

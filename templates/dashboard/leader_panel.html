@@ -14,45 +14,18 @@
     {{ location_formset.management_form }}
     <section class="leader-section">
         <h2>TRANS i piętra</h2>
-        {% for form, formset in message_formsets %}
-            <fieldset class="location-fieldset">
-                <legend>{{ form.instance.name }}</legend>
-                {{ form.id }}
-                {{ form.non_field_errors }}
-                <div class="location-status">
-                    <label class="toggle">
-                        {{ form.is_closed }}
-                        <span>Zamknięte</span>
-                    </label>
-                    {{ form.is_closed.errors }}
-                </div>
-                <div class="messages-list">
-                    {{ formset.management_form }}
-                    {{ formset.non_form_errors }}
-                    {% for message_form in formset.forms %}
-                        <div class="message-item">
-                            {{ message_form.id }}
-                            <label class="toggle">
-                                {{ message_form.is_active }}
-                                <span>Wyświetlaj</span>
-                            </label>
-                            <div class="message-text">
-                                {{ message_form.text }}
-                                {{ message_form.text.errors }}
-                            </div>
-                            {% if message_form.can_delete %}
-                                <label class="toggle delete-toggle">
-                                    {{ message_form.DELETE }}
-                                    <span>Usuń</span>
-                                </label>
-                            {% endif %}
-                            {{ message_form.non_field_errors }}
-                        </div>
-                    {% endfor %}
-                </div>
-            </fieldset>
+        {% for form, formset in grouped_forms.primary %}
+            {% include "dashboard/partials/location_formset.html" with form=form formset=formset %}
         {% endfor %}
     </section>
+    {% if grouped_forms.zones %}
+        <section class="leader-section">
+            <h2>STREFY</h2>
+            {% for form, formset in grouped_forms.zones %}
+                {% include "dashboard/partials/location_formset.html" with form=form formset=formset %}
+            {% endfor %}
+        </section>
+    {% endif %}
     <div class="form-actions">
         <button type="submit" class="btn-primary">Zapisz zmiany</button>
     </div>
