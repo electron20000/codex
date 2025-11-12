@@ -1,31 +1,31 @@
 from django.contrib import admin
 
-from .models import Floor, FloorStatus, QuickNotice, TransZoneStatus
+from .models import Location, LocationMessage
 
 
-@admin.register(Floor)
-class FloorAdmin(admin.ModelAdmin):
-    list_display = ("display_name", "order", "is_active")
-    list_editable = ("order", "is_active")
-    search_fields = ("display_name", "name")
+class LocationMessageInline(admin.TabularInline):
+    model = LocationMessage
+    extra = 0
+    fields = ("text", "is_active", "created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at")
 
 
-@admin.register(FloorStatus)
-class FloorStatusAdmin(admin.ModelAdmin):
-    list_display = ("floor", "status", "redirect_to", "updated_at")
-    list_filter = ("status",)
-    autocomplete_fields = ("redirect_to",)
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "order", "is_closed", "updated_at")
+    list_editable = ("order", "is_closed")
+    ordering = ("order", "id")
+    search_fields = ("name", "slug")
+    inlines = [LocationMessageInline]
 
 
-@admin.register(TransZoneStatus)
-class TransZoneStatusAdmin(admin.ModelAdmin):
-    list_display = ("status", "redirect_to", "updated_at")
-    autocomplete_fields = ("redirect_to",)
+@admin.register(LocationMessage)
+class LocationMessageAdmin(admin.ModelAdmin):
+    list_display = ("location", "short_text", "is_active", "created_at", "updated_at")
+    list_filter = ("location", "is_active")
+    search_fields = ("text",)
+    ordering = ("location__order", "created_at", "id")
 
-
-@admin.register(QuickNotice)
-class QuickNoticeAdmin(admin.ModelAdmin):
-    list_display = ("title", "category", "is_active", "sort_order", "allow_note")
-    list_editable = ("category", "is_active", "sort_order", "allow_note")
-    list_filter = ("category", "is_active")
-    search_fields = ("title", "body")
+    @admin.display(description="Treść")
+    def short_text(self, obj):
+        return obj.display_text[:80]

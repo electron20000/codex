@@ -1,86 +1,76 @@
 from django.contrib import messages
-from django.forms import modelformset_factory
+from django.db import transaction
+from django.db.models import Prefetch
+from django.forms import inlineformset_factory, modelformset_factory
 from django.shortcuts import redirect, render
 
-from .forms import FloorStatusForm, QuickNoticeForm, TransZoneStatusForm
-from .models import FloorStatus, QuickNotice, TransZoneStatus
+from .forms import LocationForm, LocationMessageForm
+from .models import Location, LocationMessage
 
 
 def display_board(request):
-    floor_statuses = (
-        FloorStatus.objects.select_related("floor", "redirect_to")
-        .filter(floor__is_active=True)
-        .order_by("floor__order")
+    message_prefetch = Prefetch(
+        "messages",
+        queryset=LocationMessage.objects.order_by("created_at", "id"),
     )
-    trans_status = TransZoneStatus.objects.first()
-    active_notices = QuickNotice.objects.filter(is_active=True).order_by("sort_order")
+    locations = Location.objects.order_by("order", "id").prefetch_related(message_prefetch)
 
     context = {
-        "floor_statuses": floor_statuses,
-        "trans_status": trans_status,
-        "active_notices": active_notices,
+        "locations": locations,
     }
     return render(request, "dashboard/display_board.html", context)
 
 
 def leader_panel(request):
-    floor_queryset = (
-        FloorStatus.objects.select_related("floor", "redirect_to")
-        .filter(floor__is_active=True)
-        .order_by("floor__order")
-    )
-    FloorStatusFormSet = modelformset_factory(
-        FloorStatus,
-        form=FloorStatusForm,
-        extra=0,
-    )
-
-    QuickNoticeFormSet = modelformset_factory(
-        QuickNotice,
-        form=QuickNoticeForm,
-        extra=0,
+    locations = list(Location.objects.order_by("order", "id"))
+    LocationFormSet = modelformset_factory(Location, form=LocationForm, extra=0)
+    MessageFormSet = inlineformset_factory(
+        Location,
+        LocationMessage,
+        form=LocationMessageForm,
+        extra=1,
+        can_delete=True,
     )
 
-    trans_status = TransZoneStatus.objects.first()
-    if trans_status is None:
-        trans_status = TransZoneStatus.objects.create()
+    location_formset = LocationFormSet(
+        request.POST or None,
+        queryset=Location.objects.order_by("order", "id"),
+        prefix="locations",
+    )
+
+    message_formsets = {}
+    for location in locations:
+        message_formsets[location.pk] = MessageFormSet(
+            request.POST or None,
+            instance=location,
+            prefix=f"messages-{location.pk}",
+        )
+
+    paired_forms = [
+        (form, message_formsets.get(form.instance.pk)) for form in location_formset.forms
+    ]
 
     if request.method == "POST":
-        floor_formset = FloorStatusFormSet(
-            request.POST, queryset=floor_queryset, prefix="floors"
-        )
-        trans_form = TransZoneStatusForm(request.POST, instance=trans_status, prefix="trans")
-        notice_formset = QuickNoticeFormSet(
-            request.POST,
-            queryset=QuickNotice.objects.order_by("sort_order"),
-            prefix="notices",
-        )
+        all_valid = location_formset.is_valid()
+        for formset in message_formsets.values():
+            all_valid = all_valid and formset.is_valid()
 
-        if floor_formset.is_valid() and trans_form.is_valid() and notice_formset.is_valid():
-            floor_formset.save()
-            trans_form.save()
-            notice_formset.save()
+        if all_valid:
+            with transaction.atomic():
+                location_formset.save()
+                for location in locations:
+                    formset = message_formsets[location.pk]
+                    saved_messages = formset.save(commit=False)
+                    for obj in formset.deleted_objects:
+                        obj.delete()
+                    for message in saved_messages:
+                        message.location = location
+                        message.save()
             messages.success(request, "Komunikaty zostały zaktualizowane.")
             return redirect("leader-panel")
-    else:
-        floor_formset = FloorStatusFormSet(queryset=floor_queryset, prefix="floors")
-        trans_form = TransZoneStatusForm(instance=trans_status, prefix="trans")
-        notice_formset = QuickNoticeFormSet(
-            queryset=QuickNotice.objects.order_by("sort_order"), prefix="notices"
-        )
-
-    notice_groups = []
-    for form in notice_formset.forms:
-        label = form.instance.get_category_display()
-        if notice_groups and notice_groups[-1][0] == label:
-            notice_groups[-1][1].append(form)
-        else:
-            notice_groups.append([label, [form]])
 
     context = {
-        "floor_formset": floor_formset,
-        "trans_form": trans_form,
-        "notice_formset": notice_formset,
-        "notice_forms_by_category": notice_groups,
+        "location_formset": location_formset,
+        "message_formsets": paired_forms,
     }
     return render(request, "dashboard/leader_panel.html", context)

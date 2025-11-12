@@ -21,6 +21,10 @@ python manage.py runserver
 Aplikacja udostępnia dwa główne adresy URL:
 
 - `/` – tablica informacyjna przeznaczona do wyświetlania na telewizorach.
-- `/leader/` – panel lidera z gotowymi formularzami do aktualizowania komunikatów.
+- `/leader/` – panel lidera z formularzami do aktualizowania komunikatów.
 
-W razie potrzeby dodatkowych komunikatów lub pięter można je skonfigurować w panelu admina (`/admin/`).
+W panelu lidera każda lokalizacja (TRANS, P1–P4) ma przycisk **Zamknięte** oraz listę zapamiętywanych
+komunikatów. Możesz dodać kolejne pola, uzupełnić treść i zaznaczyć, które wiadomości mają pojawić się na
+tablicy. Zmiana statusu na zamknięty powoduje, że na ekranie pracowniczym dana sekcja świeci się na czerwono
+z napisem „Zamknięte”, w przeciwnym razie okienka są zielone. Dodatkowe lokalizacje lub modyfikacje możesz
+przygotować z poziomu panelu admina (`/admin/`).

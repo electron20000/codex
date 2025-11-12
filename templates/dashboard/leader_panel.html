@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Panel lidera{% endblock %}
-{% block header %}Panel szybkich komunikatów{% endblock %}
+{% block header %}Sterowanie komunikatami{% endblock %}
 {% block content %}
 {% if messages %}
     <ul class="messages">
@@ -11,87 +11,48 @@
 {% endif %}
 <form method="post" class="leader-form">
     {% csrf_token %}
-
-    <section>
-        <h2>Strefa transu</h2>
-        <div class="form-grid">
-            {{ trans_form.id }}
-            {{ trans_form.non_field_errors }}
-            <div class="field-group">
-                <label>Status</label>
-                {{ trans_form.status }}
-                {{ trans_form.status.errors }}
-            </div>
-            <div class="field-group">
-                <label>Piętro docelowe</label>
-                {{ trans_form.redirect_to }}
-                {{ trans_form.redirect_to.errors }}
-            </div>
-            <div class="field-group">
-                <label>Dodatkowa notatka</label>
-                {{ trans_form.note }}
-                {{ trans_form.note.errors }}
-            </div>
-        </div>
-    </section>
-
-    <section>
-        <h2>Piętra</h2>
-        {{ floor_formset.management_form }}
-        {% for form in floor_formset.forms %}
-            <fieldset class="floor-fieldset">
-                <legend>{{ form.instance.floor.display_name }}</legend>
+    {{ location_formset.management_form }}
+    <section class="leader-section">
+        <h2>TRANS i piętra</h2>
+        {% for form, formset in message_formsets %}
+            <fieldset class="location-fieldset">
+                <legend>{{ form.instance.name }}</legend>
                 {{ form.id }}
                 {{ form.non_field_errors }}
-                <div class="field-group">
-                    <label>Status</label>
-                    {{ form.status }}
-                    {{ form.status.errors }}
+                <div class="location-status">
+                    <label class="toggle">
+                        {{ form.is_closed }}
+                        <span>Zamknięte</span>
+                    </label>
+                    {{ form.is_closed.errors }}
                 </div>
-                <div class="field-group">
-                    <label>Docelowe piętro</label>
-                    {{ form.redirect_to }}
-                    {{ form.redirect_to.errors }}
-                </div>
-                <div class="field-group">
-                    <label>Dodatkowa notatka</label>
-                    {{ form.note }}
-                    {{ form.note.errors }}
+                <div class="messages-list">
+                    {{ formset.management_form }}
+                    {{ formset.non_form_errors }}
+                    {% for message_form in formset.forms %}
+                        <div class="message-item">
+                            {{ message_form.id }}
+                            <label class="toggle">
+                                {{ message_form.is_active }}
+                                <span>Wyświetlaj</span>
+                            </label>
+                            <div class="message-text">
+                                {{ message_form.text }}
+                                {{ message_form.text.errors }}
+                            </div>
+                            {% if message_form.can_delete %}
+                                <label class="toggle delete-toggle">
+                                    {{ message_form.DELETE }}
+                                    <span>Usuń</span>
+                                </label>
+                            {% endif %}
+                            {{ message_form.non_field_errors }}
+                        </div>
+                    {% endfor %}
                 </div>
             </fieldset>
         {% endfor %}
     </section>
-
-    <section>
-        <h2>Szybkie komunikaty</h2>
-        {{ notice_formset.management_form }}
-        {{ notice_formset.non_form_errors }}
-        {% for category, forms in notice_forms_by_category %}
-            <div class="notice-category">
-                <h3>{{ category }}</h3>
-                {% for form in forms %}
-                    <div class="notice-row">
-                        {{ form.id }}
-                        <label>
-                            {{ form.is_active }}
-                            <span>{{ form.instance.title }}</span>
-                        </label>
-                        {% if not form.note.is_hidden %}
-                            <div class="notice-note">
-                                {{ form.note }}
-                                {{ form.note.errors }}
-                            </div>
-                        {% else %}
-                            {{ form.note }}
-                            {{ form.note.errors }}
-                        {% endif %}
-                        {{ form.non_field_errors }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endfor %}
-    </section>
-
     <div class="form-actions">
         <button type="submit" class="btn-primary">Zapisz zmiany</button>
     </div>

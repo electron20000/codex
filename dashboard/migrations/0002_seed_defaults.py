@@ -4,75 +4,24 @@ from django.db import migrations
 
 
 def create_defaults(apps, schema_editor):
-    Floor = apps.get_model("dashboard", "Floor")
-    FloorStatus = apps.get_model("dashboard", "FloorStatus")
-    TransZoneStatus = apps.get_model("dashboard", "TransZoneStatus")
-    QuickNotice = apps.get_model("dashboard", "QuickNotice")
-
-    floors = [
-        {"name": "floor-1", "display_name": "Piętro 1", "order": 1},
-        {"name": "floor-2", "display_name": "Piętro 2", "order": 2},
-        {"name": "floor-3", "display_name": "Piętro 3", "order": 3},
-        {"name": "floor-4", "display_name": "Piętro 4", "order": 4},
+    Location = apps.get_model("dashboard", "Location")
+    defaults = [
+        {"slug": "trans", "name": "TRANS", "order": 0},
+        {"slug": "p1", "name": "P1", "order": 1},
+        {"slug": "p2", "name": "P2", "order": 2},
+        {"slug": "p3", "name": "P3", "order": 3},
+        {"slug": "p4", "name": "P4", "order": 4},
     ]
-
-    for data in floors:
-        floor, _ = Floor.objects.get_or_create(**data)
-        FloorStatus.objects.get_or_create(floor=floor)
-
-    TransZoneStatus.objects.get_or_create(id=1)
-
-    notices = [
-        {
-            "slug": "trans-trainers-only",
-            "title": "Trans: tylko osoby upoważnione",
-            "body": "Tylko osoby szkolące i liderzy mogą pobierać wózki ze strefy transu.",
-            "category": "trans",
-            "sort_order": 10,
-            "allow_note": True,
-        },
-        {
-            "slug": "priority-floor",
-            "title": "Priorytetowe piętro",
-            "body": "Priorytetowe piętro do natychmiastowego wsparcia:",
-            "category": "general",
-            "sort_order": 20,
-            "allow_note": True,
-        },
-        {
-            "slug": "empty-carts",
-            "title": "Odkładaj puste wózki",
-            "body": "Puste wózki odstawiamy do strefy zwrotów na końcu alejki.",
-            "category": "general",
-            "sort_order": 30,
-        },
-        {
-            "slug": "safety-check",
-            "title": "Przerwa bezpieczeństwa",
-            "body": "Przypomnienie: zachowujcie odstępy i odkładajcie skanery na stacje ładowania.",
-            "category": "general",
-            "sort_order": 40,
-        },
-    ]
-
-    for notice_data in notices:
-        QuickNotice.objects.get_or_create(slug=notice_data["slug"], defaults=notice_data)
+    for data in defaults:
+        Location.objects.get_or_create(slug=data["slug"], defaults=data)
 
 
 def remove_defaults(apps, schema_editor):
-    Floor = apps.get_model("dashboard", "Floor")
-    TransZoneStatus = apps.get_model("dashboard", "TransZoneStatus")
-    QuickNotice = apps.get_model("dashboard", "QuickNotice")
-
-    QuickNotice.objects.filter(
-        slug__in=["trans-trainers-only", "priority-floor", "empty-carts", "safety-check"]
-    ).delete()
-    TransZoneStatus.objects.filter(id=1).delete()
-    Floor.objects.filter(name__in=["floor-1", "floor-2", "floor-3", "floor-4"]).delete()
+    Location = apps.get_model("dashboard", "Location")
+    Location.objects.filter(slug__in=["trans", "p1", "p2", "p3", "p4"]).delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("dashboard", "0001_initial"),
     ]

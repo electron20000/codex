@@ -5,14 +5,13 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name="Floor",
+            name="Location",
             fields=[
                 (
                     "id",
@@ -23,17 +22,18 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("name", models.CharField(max_length=50, unique=True)),
-                ("display_name", models.CharField(max_length=50)),
+                ("slug", models.SlugField(max_length=20, unique=True)),
+                ("name", models.CharField(max_length=50)),
                 ("order", models.PositiveIntegerField(default=0)),
-                ("is_active", models.BooleanField(default=True)),
+                ("is_closed", models.BooleanField(default=False)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
                 "ordering": ["order", "id"],
             },
         ),
         migrations.CreateModel(
-            name="QuickNotice",
+            name="LocationMessage",
             fields=[
                 (
                     "id",
@@ -44,119 +44,21 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("slug", models.SlugField(unique=True)),
-                ("title", models.CharField(max_length=120)),
-                ("body", models.TextField()),
-                (
-                    "category",
-                    models.CharField(
-                        choices=[
-                            ("general", "Ogólne"),
-                            ("training", "Szkolenia"),
-                            ("trans", "Strefa transu"),
-                        ],
-                        default="general",
-                        max_length=20,
-                    ),
-                ),
-                ("sort_order", models.PositiveIntegerField(default=0)),
-                ("allow_note", models.BooleanField(default=False)),
+                ("text", models.TextField()),
                 ("is_active", models.BooleanField(default=False)),
-                ("note", models.CharField(blank=True, max_length=255)),
-                ("updated_at", models.DateTimeField(auto_now=True)),
-            ],
-            options={
-                "ordering": ["sort_order", "title"],
-            },
-        ),
-        migrations.CreateModel(
-            name="TransZoneStatus",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                (
-                    "status",
-                    models.CharField(
-                        choices=[
-                            ("available", "Można pobierać wózki"),
-                            ("restricted", "Nie pobierać wózków"),
-                            ("limited", "Tylko wskazane osoby"),
-                        ],
-                        default="available",
-                        max_length=20,
-                    ),
-                ),
-                ("note", models.CharField(blank=True, max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (
-                    "redirect_to",
+                    "location",
                     models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="trans_redirects",
-                        to="dashboard.floor",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "Status strefy transu",
-                "verbose_name_plural": "Statusy strefy transu",
-            },
-        ),
-        migrations.CreateModel(
-            name="FloorStatus",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                (
-                    "status",
-                    models.CharField(
-                        choices=[
-                            ("work", "Stowujcie tutaj"),
-                            ("redirect", "Po zakończeniu przejdźcie dalej"),
-                            ("hold", "Wstrzymajcie pracę"),
-                        ],
-                        default="work",
-                        max_length=20,
-                    ),
-                ),
-                ("note", models.CharField(blank=True, max_length=255)),
-                ("updated_at", models.DateTimeField(auto_now=True)),
-                (
-                    "floor",
-                    models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE,
-                        to="dashboard.floor",
-                    ),
-                ),
-                (
-                    "redirect_to",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="redirected_from",
-                        to="dashboard.floor",
+                        related_name="messages",
+                        to="dashboard.location",
                     ),
                 ),
             ],
             options={
-                "ordering": ["floor__order"],
+                "ordering": ["created_at", "id"],
             },
         ),
     ]
