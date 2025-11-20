@@ -3,6 +3,9 @@
 import os
 import sys
 
+# Ensure a modern SQLite build is available before Django imports.
+import stowboard.sqlite_patch  # noqa: F401
+
 
 def main():
     """Run administrative tasks."""

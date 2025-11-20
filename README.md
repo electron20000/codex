@@ -8,6 +8,8 @@ udać, oraz czy mogą pobierać wózki ze strefy transu.
 
 - Python 3.11+
 - Django 3.2.25 (patrz `requirements.txt`)
+- pysqlite3-binary (dostarczany, aby zapewnić SQLite ≥ 3.9 w środowiskach ze
+  starszą biblioteką systemową)
 
 ## Pierwsze uruchomienie
 
@@ -28,3 +30,7 @@ komunikatów. Możesz dodać kolejne pola, uzupełnić treść i zaznaczyć, kt�
 tablicy. Zmiana statusu na zamknięty powoduje, że na ekranie pracowniczym dana sekcja świeci się na czerwono
 z napisem „Zamknięte”, w przeciwnym razie okienka są zielone. Dodatkowe lokalizacje lub modyfikacje możesz
 przygotować z poziomu panelu admina (`/admin/`).
+
+> Uwaga: gdy systemowa biblioteka SQLite jest starsza niż 3.9 (np. 3.7.x),
+> automatycznie wczytywany jest moduł `pysqlite3` dostarczający nowszą wersję
+> wymagane przez Django 3.2.
