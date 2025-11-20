@@ -335,6 +335,211 @@ a {
     justify-content: flex-end;
 }
 
+.theme-designer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.theme-designer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.theme-designer__hint {
+    color: var(--text-muted);
+    margin: 0.5rem 0 0;
+    max-width: 56ch;
+}
+
+.theme-hidden-inputs {
+    display: none;
+}
+
+.theme-playground {
+    border: 1px dashed var(--leader-border);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(6px);
+}
+
+.theme-playground__columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.theme-preview-card {
+    background: var(--leader-card);
+    border: 1px solid var(--leader-border);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.theme-preview-card__header {
+    margin-bottom: 0.75rem;
+}
+
+.theme-preview-card__header h3 {
+    margin: 0;
+}
+
+.theme-preview-card__header p {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+}
+
+.theme-preview-frame {
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--leader-border);
+    padding: 1rem;
+    background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+}
+
+.theme-preview-frame--leader {
+    background: linear-gradient(180deg, var(--leader-bg-top), var(--leader-bg-bottom));
+}
+
+.locations-board--preview {
+    width: 100%;
+    gap: 1rem;
+}
+
+.locations-board--preview .location-card {
+    min-height: 120px;
+    transform: scale(0.95);
+    cursor: pointer;
+}
+
+.locations-board--preview .location-card__header h2 {
+    font-size: 1.1rem;
+}
+
+.leader-preview {
+    display: flex;
+    justify-content: center;
+}
+
+.leader-preview__card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--leader-card);
+    border: 1px solid var(--leader-border);
+    border-radius: 1rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.leader-preview__message {
+    background: var(--leader-message-card);
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--leader-border);
+}
+
+.leader-preview__input {
+    background: var(--leader-input-bg);
+    border: 1px solid var(--leader-input-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    color: var(--leader-text-main);
+}
+
+.leader-preview__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.theme-editor {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+}
+
+.theme-editor__body {
+    background: var(--leader-card);
+    border: 1px solid var(--leader-border);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    width: min(520px, 90vw);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+}
+
+.theme-editor__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.theme-editor__close {
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.theme-editor__fields {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.theme-editor__row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.95rem;
+}
+
+.theme-editor__row input {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--leader-input-border);
+    background: var(--leader-input-bg);
+    color: var(--leader-text-main);
+}
+
+.theme-editor__footer {
+    margin-top: 0.75rem;
+    color: var(--text-muted);
+}
+
+.is-theme-clickable {
+    cursor: pointer;
+    position: relative;
+}
+
+.is-theme-clickable::after {
+    content: "Edytuj kolor";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--leader-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 .btn-primary {
     background: linear-gradient(135deg, var(--leader-button-from), var(--leader-button-to));
     color: #021311;
