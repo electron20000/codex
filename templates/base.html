@@ -6,9 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}StowBoard{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <style>
+        :root {
+            --bg-top: {{ theme.board_bg_top }};
+            --bg-bottom: {{ theme.board_bg_bottom }};
+            --panel: {{ theme.board_panel }};
+            --text-main: {{ theme.board_text_main }};
+            --text-muted: {{ theme.board_text_muted }};
+            --accent: {{ theme.board_accent }};
+            --important: {{ theme.board_important }};
+            --card-green-layer-start: {{ theme.board_green_layer_start }};
+            --card-green-layer-end: {{ theme.board_green_layer_end }};
+            --card-green-inner-start: {{ theme.board_green_inner_start }};
+            --card-green-inner-end: {{ theme.board_green_inner_end }};
+            --card-blue-layer-start: {{ theme.board_blue_layer_start }};
+            --card-blue-layer-end: {{ theme.board_blue_layer_end }};
+            --card-blue-inner-start: {{ theme.board_blue_inner_start }};
+            --card-blue-inner-end: {{ theme.board_blue_inner_end }};
+            --card-red-layer-start: {{ theme.board_red_layer_start }};
+            --card-red-layer-end: {{ theme.board_red_layer_end }};
+            --card-red-inner-start: {{ theme.board_red_inner_start }};
+            --card-red-inner-end: {{ theme.board_red_inner_end }};
+
+            --leader-bg-top: {{ theme.leader_bg_top }};
+            --leader-bg-bottom: {{ theme.leader_bg_bottom }};
+            --leader-panel: {{ theme.leader_panel }};
+            --leader-text-main: {{ theme.leader_text_main }};
+            --leader-border: {{ theme.leader_border }};
+            --leader-card: {{ theme.leader_card }};
+            --leader-message-card: {{ theme.leader_message_card }};
+            --leader-input-bg: {{ theme.leader_input_bg }};
+            --leader-input-border: {{ theme.leader_input_border }};
+            --leader-button-from: {{ theme.leader_button_from }};
+            --leader-button-to: {{ theme.leader_button_to }};
+        }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <header class="page-header">
         <h1>{% block header %}StowBoard{% endblock %}</h1>
     </header>

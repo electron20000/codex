@@ -1,6 +1,8 @@
 {% extends "base.html" %}
+{% load dashboard_extras %}
 {% block title %}Panel lidera{% endblock %}
 {% block header %}Sterowanie komunikatami{% endblock %}
+{% block body_class %}page--leader{% endblock %}
 {% block content %}
 {% if messages %}
     <ul class="messages">
@@ -12,6 +14,36 @@
 <form method="post" class="leader-form">
     {% csrf_token %}
     {{ location_formset.management_form }}
+    <section class="leader-section">
+        <h2>Ustawienia wyglądu</h2>
+        {{ theme_form.non_field_errors }}
+        <div class="theme-settings">
+            <div class="theme-settings__group">
+                <h3>Dashboard</h3>
+                {% for field_name in theme_board_fields %}
+                    {% with field=theme_form|field_by_name:field_name %}
+                        <div class="theme-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {{ field.errors }}
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            <div class="theme-settings__group">
+                <h3>Panel lidera</h3>
+                {% for field_name in theme_leader_fields %}
+                    {% with field=theme_form|field_by_name:field_name %}
+                        <div class="theme-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {{ field.errors }}
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
     <section class="leader-section">
         <h2>TRANS i piętra</h2>
         {% for form, formset in grouped_forms.primary %}

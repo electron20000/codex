@@ -7,8 +7,8 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .forms import LocationForm, LocationMessageForm
-from .models import Location, LocationMessage
+from .forms import LocationForm, LocationMessageForm, ThemeSettingsForm
+from .models import Location, LocationMessage, ThemeSettings
 
 
 def _board_state():
@@ -60,6 +60,8 @@ def board_data(request):
 
 def leader_panel(request):
     locations = list(Location.objects.order_by("order", "id"))
+    theme = ThemeSettings.load()
+    theme_form = ThemeSettingsForm(request.POST or None, instance=theme, prefix="theme")
     LocationFormSet = modelformset_factory(Location, form=LocationForm, extra=0)
     MessageFormSet = inlineformset_factory(
         Location,
@@ -88,12 +90,14 @@ def leader_panel(request):
     ]
 
     if request.method == "POST":
-        all_valid = location_formset.is_valid()
+        all_valid = theme_form.is_valid()
+        all_valid = all_valid and location_formset.is_valid()
         for formset in message_formsets.values():
             all_valid = all_valid and formset.is_valid()
 
         if all_valid:
             with transaction.atomic():
+                theme_form.save()
                 location_formset.save()
                 for location in locations:
                     formset = message_formsets[location.pk]
@@ -113,9 +117,48 @@ def leader_panel(request):
         else:
             grouped_forms["primary"].append((form, formset))
 
+    board_fields = [
+        "board_bg_top",
+        "board_bg_bottom",
+        "board_panel",
+        "board_text_main",
+        "board_text_muted",
+        "board_accent",
+        "board_important",
+        "board_green_layer_start",
+        "board_green_layer_end",
+        "board_green_inner_start",
+        "board_green_inner_end",
+        "board_blue_layer_start",
+        "board_blue_layer_end",
+        "board_blue_inner_start",
+        "board_blue_inner_end",
+        "board_red_layer_start",
+        "board_red_layer_end",
+        "board_red_inner_start",
+        "board_red_inner_end",
+    ]
+
+    leader_fields = [
+        "leader_bg_top",
+        "leader_bg_bottom",
+        "leader_panel",
+        "leader_text_main",
+        "leader_border",
+        "leader_card",
+        "leader_message_card",
+        "leader_input_bg",
+        "leader_input_border",
+        "leader_button_from",
+        "leader_button_to",
+    ]
+
     context = {
         "location_formset": location_formset,
         "message_formsets": paired_forms,
+        "theme_form": theme_form,
+        "theme_board_fields": board_fields,
+        "theme_leader_fields": leader_fields,
         "grouped_forms": grouped_forms,
     }
     return render(request, "dashboard/leader_panel.html", context)

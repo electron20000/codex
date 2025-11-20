@@ -31,6 +31,10 @@ tablicy. Zmiana statusu na zamknięty powoduje, że na ekranie pracowniczym dana
 z napisem „Zamknięte”, w przeciwnym razie okienka są zielone. Dodatkowe lokalizacje lub modyfikacje możesz
 przygotować z poziomu panelu admina (`/admin/`).
 
+Sekcja **Ustawienia wyglądu** w panelu lidera pozwala dostroić dashboard i sam panel – m.in. kolory tła,
+kontrast warstw kart, akcenty, kolor migającej ramki „Ważne”, tła pól i przycisków. Każda zmiana jest
+zapisywana i natychmiast widoczna na ekranach bez ręcznego odświeżania.
+
 > Uwaga: gdy systemowa biblioteka SQLite jest starsza niż 3.9 (np. 3.7.x),
 > automatycznie wczytywany jest moduł `pysqlite3` dostarczający nowszą wersję
 > wymagane przez Django 3.2.
