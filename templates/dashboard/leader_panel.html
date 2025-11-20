@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Panel lidera{% endblock %}
+{% block header %}Sterowanie komunikatami{% endblock %}
+{% block content %}
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li class="message message--{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+<form method="post" class="leader-form">
+    {% csrf_token %}
+    {{ location_formset.management_form }}
+    <section class="leader-section">
+        <h2>TRANS i piętra</h2>
+        {% for form, formset in grouped_forms.primary %}
+            {% include "dashboard/partials/location_formset.html" with form=form formset=formset %}
+        {% endfor %}
+    </section>
+    {% if grouped_forms.zones %}
+        <section class="leader-section">
+            <h2>STREFY</h2>
+            {% for form, formset in grouped_forms.zones %}
+                {% include "dashboard/partials/location_formset.html" with form=form formset=formset %}
+            {% endfor %}
+        </section>
+    {% endif %}
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">Zapisz zmiany</button>
+    </div>
+</form>
+{% endblock %}

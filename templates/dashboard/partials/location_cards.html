@@ -1,0 +1,32 @@
+{% for location in locations %}
+<article
+    class="location-card location-card--{{ location.slug }} {% if location.is_closed %}location-card--closed{% else %}location-card--open{% endif %}"
+    data-location="{{ location.slug }}"
+>
+    <div class="location-card__layer"></div>
+    <div class="location-card__content">
+        <header class="location-card__header">
+            <h2>{{ location.name }}</h2>
+        </header>
+        <div class="location-card__body">
+            {% if location.is_closed %}
+                <div class="location-card__status">Zamknięte</div>
+            {% else %}
+                {% if location.active_messages %}
+                    <ul class="location-messages">
+                        {% for message in location.active_messages %}
+                            <li class="location-message {% if message.is_important %}location-message--important{% endif %}">
+                                <span>{{ message.display_text }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="location-card__empty">Brak aktywnych komunikatów.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</article>
+{% empty %}
+<p>Brak zdefiniowanych lokalizacji.</p>
+{% endfor %}
