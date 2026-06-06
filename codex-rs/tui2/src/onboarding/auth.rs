@@ -83,20 +83,14 @@ impl KeyboardHandler for AuthModeWidget {
         }
 
         match key_event.code {
-            KeyCode::Up | KeyCode::Char('k') => {
-                if self.is_chatgpt_login_allowed() {
-                    self.highlighted_mode = AuthMode::ChatGPT;
-                }
+            KeyCode::Up | KeyCode::Char('k') if self.is_chatgpt_login_allowed() => {
+                self.highlighted_mode = AuthMode::ChatGPT;
             }
-            KeyCode::Down | KeyCode::Char('j') => {
-                if self.is_api_login_allowed() {
-                    self.highlighted_mode = AuthMode::ApiKey;
-                }
+            KeyCode::Down | KeyCode::Char('j') if self.is_api_login_allowed() => {
+                self.highlighted_mode = AuthMode::ApiKey;
             }
-            KeyCode::Char('1') => {
-                if self.is_chatgpt_login_allowed() {
-                    self.start_chatgpt_login();
-                }
+            KeyCode::Char('1') if self.is_chatgpt_login_allowed() => {
+                self.start_chatgpt_login();
             }
             KeyCode::Char('2') => {
                 if self.is_api_login_allowed() {

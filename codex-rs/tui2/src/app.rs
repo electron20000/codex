@@ -1965,14 +1965,12 @@ impl App {
                 code: KeyCode::Home,
                 kind: KeyEventKind::Press | KeyEventKind::Repeat,
                 ..
-            } => {
-                if !self.transcript_cells.is_empty() {
-                    self.transcript_scroll = TranscriptScroll::Scrolled {
-                        cell_index: 0,
-                        line_in_cell: 0,
-                    };
-                    tui.frame_requester().schedule_frame();
-                }
+            } if !self.transcript_cells.is_empty() => {
+                self.transcript_scroll = TranscriptScroll::Scrolled {
+                    cell_index: 0,
+                    line_in_cell: 0,
+                };
+                tui.frame_requester().schedule_frame();
             }
             KeyEvent {
                 code: KeyCode::End,

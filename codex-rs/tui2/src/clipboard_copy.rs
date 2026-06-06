@@ -1,5 +1,3 @@
-use tracing::error;
-
 #[derive(Debug)]
 pub enum ClipboardError {
     ClipboardUnavailable(String),

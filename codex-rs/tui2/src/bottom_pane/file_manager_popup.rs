@@ -283,13 +283,23 @@ fn compare_entries(
     }
 
     let base = match sort_key {
-        FileManagerSortKey::Name => compare_kind_group(a, b)
-            .then_with(|| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase())),
-        FileManagerSortKey::Date => compare_modified(a, b)
-            .then_with(|| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase())),
+        FileManagerSortKey::Name => compare_kind_group(a, b).then_with(|| {
+            a.name
+                .to_ascii_lowercase()
+                .cmp(&b.name.to_ascii_lowercase())
+        }),
+        FileManagerSortKey::Date => compare_modified(a, b).then_with(|| {
+            a.name
+                .to_ascii_lowercase()
+                .cmp(&b.name.to_ascii_lowercase())
+        }),
         FileManagerSortKey::Type => compare_kind_group(a, b)
             .then_with(|| a.extension.cmp(&b.extension))
-            .then_with(|| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase())),
+            .then_with(|| {
+                a.name
+                    .to_ascii_lowercase()
+                    .cmp(&b.name.to_ascii_lowercase())
+            }),
     };
 
     match direction {
@@ -318,10 +328,7 @@ impl WidgetRef for &FileManagerPopup {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let [header_area, rows_area] =
             Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
-        Line::from(self.sort_label()).render_ref(
-            header_area.inset(Insets::tlbr(0, 2, 0, 0)),
-            buf,
-        );
+        Line::from(self.sort_label()).render_ref(header_area.inset(Insets::tlbr(0, 2, 0, 0)), buf);
 
         let rows: Vec<GenericDisplayRow> = self
             .entries

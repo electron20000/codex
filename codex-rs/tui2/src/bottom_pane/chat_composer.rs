@@ -2588,8 +2588,9 @@ mod tests {
         composer.set_text_content("przeanalizuj /file potem".to_string());
         composer.textarea.set_cursor("przeanalizuj /file".len());
 
-        composer
-            .insert_selected_file_manager_path(Path::new("/storage/emulated/0/dlatermux/skrypt.js"));
+        composer.insert_selected_file_manager_path(Path::new(
+            "/storage/emulated/0/dlatermux/skrypt.js",
+        ));
 
         assert_eq!(
             composer.textarea.text(),
