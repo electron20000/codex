@@ -21,6 +21,8 @@ use ratatui::widgets::WidgetRef;
 use super::chat_composer_history::ChatComposerHistory;
 use super::command_popup::CommandItem;
 use super::command_popup::CommandPopup;
+use super::file_manager_popup::FileManagerPopup;
+use super::file_manager_popup::FileManagerSelection;
 use super::file_search_popup::FileSearchPopup;
 use super::footer::FooterMode;
 use super::footer::FooterProps;
@@ -104,6 +106,7 @@ pub(crate) struct ChatComposer {
     ctrl_c_quit_hint: bool,
     esc_backtrack_hint: bool,
     use_shift_enter_hint: bool,
+    dismissed_file_manager_token_range: Option<Range<usize>>,
     dismissed_file_popup_token: Option<String>,
     current_file_query: Option<String>,
     pending_pastes: Vec<(String, String)>,
@@ -133,6 +136,7 @@ pub(crate) struct ChatComposer {
 enum ActivePopup {
     None,
     Command(CommandPopup),
+    FileManager(FileManagerPopup),
     File(FileSearchPopup),
     Skill(SkillPopup),
 }
@@ -158,6 +162,7 @@ impl ChatComposer {
             ctrl_c_quit_hint: false,
             esc_backtrack_hint: false,
             use_shift_enter_hint,
+            dismissed_file_manager_token_range: None,
             dismissed_file_popup_token: None,
             current_file_query: None,
             pending_pastes: Vec::new(),
@@ -200,6 +205,7 @@ impl ChatComposer {
             ActivePopup::Command(popup) => {
                 Constraint::Max(popup.calculate_required_height(area.width))
             }
+            ActivePopup::FileManager(popup) => Constraint::Max(popup.calculate_required_height()),
             ActivePopup::File(popup) => Constraint::Max(popup.calculate_required_height()),
             ActivePopup::Skill(popup) => {
                 Constraint::Max(popup.calculate_required_height(area.width))
@@ -404,6 +410,7 @@ impl ChatComposer {
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> (InputResult, bool) {
         let result = match &mut self.active_popup {
             ActivePopup::Command(_) => self.handle_key_event_with_slash_popup(key_event),
+            ActivePopup::FileManager(_) => self.handle_key_event_with_file_manager_popup(key_event),
             ActivePopup::File(_) => self.handle_key_event_with_file_popup(key_event),
             ActivePopup::Skill(_) => self.handle_key_event_with_skill_popup(key_event),
             ActivePopup::None => self.handle_key_event_without_popup(key_event),
@@ -728,6 +735,92 @@ impl ChatComposer {
                 }
                 // No selection: treat Enter as closing the popup/session.
                 self.active_popup = ActivePopup::None;
+                (InputResult::None, true)
+            }
+            input => self.handle_input_basic(input),
+        }
+    }
+
+    fn handle_key_event_with_file_manager_popup(
+        &mut self,
+        key_event: KeyEvent,
+    ) -> (InputResult, bool) {
+        if self.handle_shortcut_overlay_key(&key_event) {
+            return (InputResult::None, true);
+        }
+
+        match key_event {
+            KeyEvent {
+                code: KeyCode::Up, ..
+            }
+            | KeyEvent {
+                code: KeyCode::Char('p'),
+                modifiers: KeyModifiers::CONTROL,
+                ..
+            } => {
+                if let ActivePopup::FileManager(popup) = &mut self.active_popup {
+                    popup.move_up();
+                }
+                (InputResult::None, true)
+            }
+            KeyEvent {
+                code: KeyCode::Down,
+                ..
+            }
+            | KeyEvent {
+                code: KeyCode::Char('n'),
+                modifiers: KeyModifiers::CONTROL,
+                ..
+            } => {
+                if let ActivePopup::FileManager(popup) = &mut self.active_popup {
+                    popup.move_down();
+                }
+                (InputResult::None, true)
+            }
+            KeyEvent {
+                code: KeyCode::Char('s'),
+                modifiers: KeyModifiers::NONE,
+                ..
+            } => {
+                if let ActivePopup::FileManager(popup) = &mut self.active_popup {
+                    popup.cycle_sort_key();
+                }
+                (InputResult::None, true)
+            }
+            KeyEvent {
+                code: KeyCode::Char('r'),
+                modifiers: KeyModifiers::NONE,
+                ..
+            } => {
+                if let ActivePopup::FileManager(popup) = &mut self.active_popup {
+                    popup.reverse_sort_direction();
+                }
+                (InputResult::None, true)
+            }
+            KeyEvent {
+                code: KeyCode::Esc, ..
+            } => {
+                self.dismissed_file_manager_token_range =
+                    Self::current_file_manager_token_range(&self.textarea);
+                self.active_popup = ActivePopup::None;
+                (InputResult::None, true)
+            }
+            KeyEvent {
+                code: KeyCode::Tab, ..
+            }
+            | KeyEvent {
+                code: KeyCode::Enter,
+                modifiers: KeyModifiers::NONE,
+                ..
+            } => {
+                let selection = match &mut self.active_popup {
+                    ActivePopup::FileManager(popup) => popup.activate_selected(),
+                    _ => FileManagerSelection::None,
+                };
+                if let FileManagerSelection::SelectedFile(path) = selection {
+                    self.insert_selected_file_manager_path(&path);
+                    self.active_popup = ActivePopup::None;
+                }
                 (InputResult::None, true)
             }
             input => self.handle_input_basic(input),
@@ -1633,17 +1726,26 @@ impl ChatComposer {
     }
 
     fn sync_popups(&mut self) {
+        let file_manager_token_range = Self::current_file_manager_token_range(&self.textarea);
         let file_token = Self::current_at_token(&self.textarea);
         let skill_token = self.current_skill_token();
 
-        let allow_command_popup = file_token.is_none() && skill_token.is_none();
+        let allow_command_popup =
+            file_manager_token_range.is_none() && file_token.is_none() && skill_token.is_none();
         self.sync_command_popup(allow_command_popup);
 
         if matches!(self.active_popup, ActivePopup::Command(_)) {
+            self.dismissed_file_manager_token_range = None;
             self.dismissed_file_popup_token = None;
             self.dismissed_skill_popup_token = None;
             return;
         }
+
+        if let Some(range) = file_manager_token_range {
+            self.sync_file_manager_popup(range);
+            return;
+        }
+        self.dismissed_file_manager_token_range = None;
 
         if let Some(token) = skill_token {
             self.sync_skill_popup(token);
@@ -1659,7 +1761,7 @@ impl ChatComposer {
         self.dismissed_file_popup_token = None;
         if matches!(
             self.active_popup,
-            ActivePopup::File(_) | ActivePopup::Skill(_)
+            ActivePopup::FileManager(_) | ActivePopup::File(_) | ActivePopup::Skill(_)
         ) {
             self.active_popup = ActivePopup::None;
         }
@@ -1769,6 +1871,16 @@ impl ChatComposer {
         self.custom_prompts = prompts.clone();
         if let ActivePopup::Command(popup) = &mut self.active_popup {
             popup.set_prompts(prompts);
+        }
+    }
+
+    fn sync_file_manager_popup(&mut self, range: Range<usize>) {
+        if self.dismissed_file_manager_token_range.as_ref() == Some(&range) {
+            return;
+        }
+
+        if !matches!(self.active_popup, ActivePopup::FileManager(_)) {
+            self.active_popup = ActivePopup::FileManager(FileManagerPopup::new());
         }
     }
 
@@ -1882,6 +1994,7 @@ impl Renderable for ChatComposer {
             + match &self.active_popup {
                 ActivePopup::None => footer_total_height,
                 ActivePopup::Command(c) => c.calculate_required_height(width),
+                ActivePopup::FileManager(c) => c.calculate_required_height(),
                 ActivePopup::File(c) => c.calculate_required_height(),
                 ActivePopup::Skill(c) => c.calculate_required_height(width),
             }
@@ -1891,6 +2004,9 @@ impl Renderable for ChatComposer {
         let [composer_rect, textarea_rect, popup_rect] = self.layout_areas(area);
         match &self.active_popup {
             ActivePopup::Command(popup) => {
+                popup.render_ref(popup_rect, buf);
+            }
+            ActivePopup::FileManager(popup) => {
                 popup.render_ref(popup_rect, buf);
             }
             ActivePopup::File(popup) => {
@@ -2483,6 +2599,30 @@ mod tests {
             composer.textarea.cursor(),
             "przeanalizuj /storage/emulated/0/dlatermux/skrypt.js ".len()
         );
+    }
+
+    #[test]
+    fn typing_file_token_opens_file_manager_popup_immediately() {
+        let mut composer = test_composer();
+
+        composer.insert_str("/file");
+
+        assert!(matches!(composer.active_popup, ActivePopup::FileManager(_)));
+    }
+
+    #[test]
+    fn esc_dismisses_file_manager_popup_without_immediate_reopen() {
+        let mut composer = test_composer();
+        composer.set_text_content("/file".to_string());
+        composer.textarea.set_cursor("/file".len());
+        composer.sync_popups();
+        assert!(matches!(composer.active_popup, ActivePopup::FileManager(_)));
+
+        composer.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+
+        assert!(matches!(composer.active_popup, ActivePopup::None));
+        composer.sync_popups();
+        assert!(matches!(composer.active_popup, ActivePopup::None));
     }
 
     #[test]

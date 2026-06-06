@@ -83,6 +83,7 @@ impl FileManagerPopup {
         popup
     }
 
+    #[cfg(test)]
     pub(crate) fn current_dir(&self) -> &Path {
         &self.current_dir
     }
