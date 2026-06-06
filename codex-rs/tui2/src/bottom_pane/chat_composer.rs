@@ -61,6 +61,7 @@ use codex_core::skills::model::SkillMetadata;
 use codex_file_search::FileMatch;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::Range;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -929,6 +930,34 @@ impl ChatComposer {
         Self::current_prefixed_token(textarea, '@', false)
     }
 
+    fn current_file_manager_token_range(textarea: &TextArea) -> Option<Range<usize>> {
+        let cursor_offset = textarea.cursor();
+        let text = textarea.text();
+        let safe_cursor = Self::clamp_to_char_boundary(text, cursor_offset);
+
+        let before_cursor = &text[..safe_cursor];
+        let after_cursor = &text[safe_cursor..];
+
+        let start_idx = before_cursor
+            .char_indices()
+            .rfind(|(_, c)| c.is_whitespace())
+            .map(|(idx, c)| idx + c.len_utf8())
+            .unwrap_or(0);
+
+        let end_rel_idx = after_cursor
+            .char_indices()
+            .find(|(_, c)| c.is_whitespace())
+            .map(|(idx, _)| idx)
+            .unwrap_or(after_cursor.len());
+        let end_idx = safe_cursor + end_rel_idx;
+
+        if text.get(start_idx..end_idx) == Some("/file") {
+            Some(start_idx..end_idx)
+        } else {
+            None
+        }
+    }
+
     fn current_skill_token(&self) -> Option<String> {
         if !self.skills_enabled() {
             return None;
@@ -984,6 +1013,25 @@ impl ChatComposer {
 
         self.textarea.set_text(&new_text);
         let new_cursor = start_idx.saturating_add(inserted.len()).saturating_add(1);
+        self.textarea.set_cursor(new_cursor);
+    }
+
+    fn insert_selected_file_manager_path(&mut self, path: &Path) {
+        let Some(range) = Self::current_file_manager_token_range(&self.textarea) else {
+            return;
+        };
+        let inserted = path.display().to_string();
+        let text = self.textarea.text();
+
+        let mut new_text =
+            String::with_capacity(text.len() - (range.end - range.start) + inserted.len() + 1);
+        new_text.push_str(&text[..range.start]);
+        new_text.push_str(&inserted);
+        new_text.push(' ');
+        new_text.push_str(&text[range.end..]);
+
+        self.textarea.set_text(&new_text);
+        let new_cursor = range.start.saturating_add(inserted.len()).saturating_add(1);
         self.textarea.set_cursor(new_cursor);
     }
 
@@ -1964,6 +2012,7 @@ mod tests {
     use image::ImageBuffer;
     use image::Rgba;
     use pretty_assertions::assert_eq;
+    use std::path::Path;
     use std::path::PathBuf;
     use tempfile::tempdir;
 
@@ -1976,6 +2025,17 @@ mod tests {
     use crate::bottom_pane::prompt_args::extract_positional_args_for_prompt_line;
     use crate::bottom_pane::textarea::TextArea;
     use tokio::sync::mpsc::unbounded_channel;
+
+    fn test_composer() -> ChatComposer {
+        let (tx, _rx) = unbounded_channel::<AppEvent>();
+        ChatComposer::new(
+            true,
+            AppEventSender::new(tx),
+            false,
+            "Ask Codex to do anything".to_string(),
+            false,
+        )
+    }
 
     #[test]
     fn footer_hint_row_is_separated_from_composer() {
@@ -2376,6 +2436,53 @@ mod tests {
                 "Failed for whitespace boundary case: {description} - input: '{input}', cursor: {cursor_pos}",
             );
         }
+    }
+
+    #[test]
+    fn current_file_manager_token_range_detects_standalone_file_token() {
+        let prefix_case = "przeanalizuj /file";
+        let cases = vec![
+            ("/file", "/file".len(), Some(0.."/file".len())),
+            (
+                prefix_case,
+                prefix_case.len(),
+                Some("przeanalizuj ".len()..prefix_case.len()),
+            ),
+            ("/file potem opisz", 2, Some(0.."/file".len())),
+            ("abc/file", "abc/file".len(), None),
+            ("/filename", "/file".len(), None),
+            ("text/file", "text".len(), None),
+        ];
+
+        for (text, cursor, expected) in cases {
+            let mut composer = test_composer();
+            composer.set_text_content(text.to_string());
+            composer.textarea.set_cursor(cursor);
+            assert_eq!(
+                ChatComposer::current_file_manager_token_range(&composer.textarea),
+                expected,
+                "case {text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn insert_selected_file_manager_path_replaces_file_token_and_preserves_surrounding_text() {
+        let mut composer = test_composer();
+        composer.set_text_content("przeanalizuj /file potem".to_string());
+        composer.textarea.set_cursor("przeanalizuj /file".len());
+
+        composer
+            .insert_selected_file_manager_path(Path::new("/storage/emulated/0/dlatermux/skrypt.js"));
+
+        assert_eq!(
+            composer.textarea.text(),
+            "przeanalizuj /storage/emulated/0/dlatermux/skrypt.js  potem"
+        );
+        assert_eq!(
+            composer.textarea.cursor(),
+            "przeanalizuj /storage/emulated/0/dlatermux/skrypt.js ".len()
+        );
     }
 
     #[test]
