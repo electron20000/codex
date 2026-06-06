@@ -25,6 +25,7 @@ mod chat_composer;
 mod chat_composer_history;
 mod command_popup;
 pub mod custom_prompt_view;
+mod file_manager_popup;
 mod file_search_popup;
 mod footer;
 mod list_selection_view;
